@@ -1,3 +1,4 @@
+"""."""
 import click
 import geocode_client
 import flask
@@ -12,8 +13,9 @@ preferred_client = None
 clients = []
 
 
-@app.route('/api/address-lookup')
+@app.route('/api/address-lookup', methods=['GET'])
 def address_lookup():
+    """."""
     address = flask.request.args.get('address')
 
     if address is None:
@@ -22,38 +24,38 @@ def address_lookup():
     for client in clients:
         try:
             lat, lng = client.get_lat_lng_from_address(address)
-            return flask.jsonify({
-                'lat': lat,
-                'lng': lng,
-                'service': client.service_name
-            })
-        except Exception as e:
-            print e
-            pass
+        except geocode_client.GeocodeServiceSearchError as err:
+            app.logger.warning(err.message)
+            continue
 
-    return flask.abort(httplib.INTERNAL_SERVER_ERROR)
+        return flask.jsonify({
+            'lat': lat,
+            'lng': lng,
+            'service': client.service_name
+        })
+
+    return (flask.jsonify({'error': 'Search term yielded no results'}),
+            httplib.NOT_FOUND)
 
 
-def _initialize(google_api_key, here_credentials, preferred_service):
-
+def _initialize(google_api_key, here_credentials, preferred_service, debug):
+    """."""
     for service in SERVICES:
-
         if service == GOOGLE_GEOCODE_SERVICE:
             new_client = geocode_client.GoogleGeocodeClient(
                 api_key=google_api_key)
-
         elif service == HERE_GEOCODE_SERVICE:
             new_client = geocode_client.HereGeocodeClient(
                 app_id=here_credentials[0], app_code=here_credentials[1])
-
         else:
             raise AssertionError('Some developer screwed up')
-
 
         if service == preferred_service:
             clients.insert(0, new_client)
         else:
             clients.append(new_client)
+
+    app.run(debug=debug)
 
 
 @click.command()
@@ -74,8 +76,8 @@ def _initialize(google_api_key, here_credentials, preferred_service):
               default=False,
               help='Run Flask in debug mode')
 def run(google_api_key, here_credentials, preferred_service, debug):
-    _initialize(google_api_key, here_credentials, preferred_service)
-    app.run(debug=debug)
+    """."""
+    _initialize(google_api_key, here_credentials, preferred_service, debug)
 
 
 if __name__ == '__main__':
