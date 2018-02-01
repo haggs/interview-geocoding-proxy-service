@@ -1,22 +1,82 @@
 import click
-from flask import Flask
+import geocode_client
+import flask
+import httplib
 
-app = Flask(__name__)
+GOOGLE_GEOCODE_SERVICE = 'google'
+HERE_GEOCODE_SERVICE = 'here'
+SERVICES = {GOOGLE_GEOCODE_SERVICE, HERE_GEOCODE_SERVICE}
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
+app = flask.Flask(__name__)
+preferred_client = None
+clients = []
+
+
+@app.route('/api/address-lookup')
+def address_lookup():
+    address = flask.request.args.get('address')
+
+    if address is None:
+        flask.abort(httplib.BAD_REQUEST)
+
+    for client in clients:
+        try:
+            lat, lng = client.get_lat_lng_from_address(address)
+            return flask.jsonify({
+                'lat': lat,
+                'lng': lng,
+                'service': client.service_name
+            })
+        except Exception as e:
+            print e
+            pass
+
+    return flask.abort(httplib.INTERNAL_SERVER_ERROR)
+
+
+def _initialize(google_api_key, here_credentials, preferred_service):
+
+    for service in SERVICES:
+
+        if service == GOOGLE_GEOCODE_SERVICE:
+            new_client = geocode_client.GoogleGeocodeClient(
+                api_key=google_api_key)
+
+        elif service == HERE_GEOCODE_SERVICE:
+            new_client = geocode_client.HereGeocodeClient(
+                app_id=here_credentials[0], app_code=here_credentials[1])
+
+        else:
+            raise AssertionError('Some developer screwed up')
+
+
+        if service == preferred_service:
+            clients.insert(0, new_client)
+        else:
+            clients.append(new_client)
+
 
 @click.command()
-@click.option('--api-key', help='The API key')
-@click.option('--preferred-service', default='google', help='The prefer')
-@click.option('--fast-mode', default=False, is_flag=True, help='Make parallel requests to both Geocache services every time')
-@click.option('--debug', default=False, help='Run Flask in debug mode')
-def run(api_key, preferred_service, fast_mode, debug):
-    print 'API KEY:', type(api_key), api_key
-    print 'PREFERRED SERVICE:', type(preferred_service), preferred_service
-    print 'FAST MODE:', type(fast_mode), fast_mode
-    # app.run(debug=debug)
+@click.option('--google-api-key',
+              type=unicode,
+              prompt='Enter API key for Google Maps Geocoding API',
+              help='API key for Google Maps Geocoding API')
+@click.option('--here-credentials', nargs=2,
+              type=unicode,
+              prompt='Enter API key for Here Geocoder API',
+              help='API key for Google Maps Geocoding API')
+@click.option('--preferred-service',
+              type=click.Choice(SERVICES),
+              default='google',
+              help='The preferred geocoding service to use')
+@click.option('--debug',
+              is_flag=True,
+              default=False,
+              help='Run Flask in debug mode')
+def run(google_api_key, here_credentials, preferred_service, debug):
+    _initialize(google_api_key, here_credentials, preferred_service)
+    app.run(debug=debug)
+
 
 if __name__ == '__main__':
     run()
