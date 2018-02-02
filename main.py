@@ -19,7 +19,7 @@ def address_lookup():
     address = flask.request.args.get('address')
 
     if address is None:
-        flask.abort(httplib.BAD_REQUEST)
+        return flask.jsonify({'error': 'Bad request'}), httplib.BAD_REQUEST
 
     for client in clients:
         try:

@@ -81,7 +81,7 @@ class HereGeocodeClient(GeocodeClient):
 
         results = json.loads(response.read())
 
-        if not results['Response']['View']:
+        if not results['Response']['View'][0]['Result']:
             raise GeocodeServiceSearchError('{} found no results for {}'.format(
                 self.service_name, address))
 
