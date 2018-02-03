@@ -1,4 +1,3 @@
-import flask
 import geocode_client
 import httplib
 import json

@@ -1,5 +1,7 @@
-"""File level comment
+"""A few classes for making API calls to some geocoding web services.
 
+Author: Dan Haggerty
+Date: Feb. 2, 2018
 """
 import httplib
 import json
@@ -7,12 +9,20 @@ import urllib
 
 
 class GeocodeServiceSearchError(Exception):
-    """Class for general errors when calling 3rd party services."""
+    """Class for general errors when calling geocoding services."""
     pass
 
 
 class GeocodeClient(object):
-    """."""
+    """Abstract class for geocoding service clients.
+
+    Attributes:
+        url_template (string): a template for forming the URL of a service call
+        service_name (string): A printable name for the client's service
+
+    Params:
+        credentials (dict): A dict containing API keys
+    """
     url_template = None
     service_name = None
 
@@ -20,12 +30,16 @@ class GeocodeClient(object):
         self.credentials = credentials
 
     def get_lat_lng_from_address(self, address):
-        """."""
+        """Interface for getting lat/long from an address."""
         raise NotImplementedError()
 
 
 class GoogleGeocodeClient(GeocodeClient):
-    """."""
+    """A client for interfacing with the Google Maps Geocoding API.
+
+    Params:
+        api_key (string): the Google Maps API key to use for making calls
+    """
     url_template = 'https://maps.googleapis.com/maps/api/geocode/json?{}'
     service_name = 'Google Maps Geocoding API'
 
@@ -33,7 +47,7 @@ class GoogleGeocodeClient(GeocodeClient):
         super(GoogleGeocodeClient, self).__init__({'api_key': api_key})
 
     def get_lat_lng_from_address(self, address):
-        """."""
+        """Provides a tuple of lat/lng for an address."""
         url = self.url_template.format(urllib.urlencode({
             'address': address,
             'api_key': self.credentials['api_key'],
@@ -82,12 +96,11 @@ class HereGeocodeClient(GeocodeClient):
         results = json.loads(response.read())
 
         if not results['Response']['View'][0]['Result']:
-            raise GeocodeServiceSearchError('{} found no results for {}'.format(
-                self.service_name, address))
+            raise GeocodeServiceSearchError(
+                '{} found no results for {}'.format(
+                    self.service_name, address))
 
         location = results['Response']['View'][0]['Result'][0][
             'Location']['DisplayPosition']
 
         return location['Latitude'], location['Longitude']
-
-

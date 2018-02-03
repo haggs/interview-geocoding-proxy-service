@@ -1,4 +1,22 @@
-"""."""
+"""A single method web service for getting the lat/long of an address.
+
+Author: Dan Haggerty
+Date: Feb. 2, 2018
+
+The service provides one GET endpoint:
+    /api/addres-lookup?address=(address to lookup)
+
+It relies on the following Geocoding web services:
+  * Google Maps Geocoding API
+  * Here Geocoder API.
+
+If a call to one of these services fails for network reasons or returns no
+lat/long results, the next service is called. The order of services is
+arbitrary but the preferred service can be configured through the CLI. If all
+services fail to give a result, this endpoint returns a 404.
+
+Instructions on starting and configuring the server can be found in README.md.
+"""
 import click
 import geocode_client
 import flask
@@ -15,7 +33,12 @@ clients = None
 
 @app.route('/api/address-lookup', methods=['GET'])
 def address_lookup():
-    """."""
+    """Handler for address lookup endpoint.
+
+    Returns:
+        A flask.wrappers.Response (a JSON doc containing an error message or
+        the lat/lng result and the service that was used to achieve the result)
+    """
     address = flask.request.args.get('address')
 
     if address is None:
@@ -39,19 +62,24 @@ def address_lookup():
 
 
 def _initialize(google_api_key, here_credentials, preferred_service):
-    """."""
+    """Initializes global list of geocode service clients.
+
+    Params:
+        google_api_key (string): Google Maps API key
+        here_credentials (tuple<string, string>): Here App ID and App Code
+        preferred_service (string): identifier for a geocode service
+    """
     global clients
     clients = []
     for service in SERVICES:
         if service == GOOGLE_GEOCODE_SERVICE:
             new_client = geocode_client.GoogleGeocodeClient(
                 api_key=google_api_key)
-        elif service == HERE_GEOCODE_SERVICE:
+        else:
             new_client = geocode_client.HereGeocodeClient(
                 app_id=here_credentials[0], app_code=here_credentials[1])
-        else:
-            raise AssertionError('Some developer screwed up')
 
+        # Put preferred service's client at the front of the client list
         if service == preferred_service:
             clients.insert(0, new_client)
         else:
@@ -76,7 +104,14 @@ def _initialize(google_api_key, here_credentials, preferred_service):
               default=False,
               help='Run Flask in debug mode')
 def run(google_api_key, here_credentials, preferred_service, debug):
-    """."""
+    """Entry point for the server that initializes everything.
+
+    Params:
+        google_api_key (string): Google Maps API key
+        here_credentials (tuple<string, string>): Here App ID and App Code
+        preferred_service (string): identifier for a geocode service
+        debug (boolean): Flag for running Flask server in debug mode
+    """
     _initialize(google_api_key, here_credentials, preferred_service)
     app.run(debug=debug)
 
