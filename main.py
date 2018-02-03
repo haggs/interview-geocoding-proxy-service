@@ -10,7 +10,7 @@ SERVICES = {GOOGLE_GEOCODE_SERVICE, HERE_GEOCODE_SERVICE}
 
 app = flask.Flask(__name__)
 preferred_client = None
-clients = []
+clients = None
 
 
 @app.route('/api/address-lookup', methods=['GET'])
@@ -38,8 +38,10 @@ def address_lookup():
             httplib.NOT_FOUND)
 
 
-def _initialize(google_api_key, here_credentials, preferred_service, debug):
+def _initialize(google_api_key, here_credentials, preferred_service):
     """."""
+    global clients
+    clients = []
     for service in SERVICES:
         if service == GOOGLE_GEOCODE_SERVICE:
             new_client = geocode_client.GoogleGeocodeClient(
@@ -54,8 +56,6 @@ def _initialize(google_api_key, here_credentials, preferred_service, debug):
             clients.insert(0, new_client)
         else:
             clients.append(new_client)
-
-    app.run(debug=debug)
 
 
 @click.command()
@@ -77,7 +77,8 @@ def _initialize(google_api_key, here_credentials, preferred_service, debug):
               help='Run Flask in debug mode')
 def run(google_api_key, here_credentials, preferred_service, debug):
     """."""
-    _initialize(google_api_key, here_credentials, preferred_service, debug)
+    _initialize(google_api_key, here_credentials, preferred_service)
+    app.run(debug=debug)
 
 
 if __name__ == '__main__':
