@@ -94,7 +94,7 @@ def _initialize(google_api_key, here_credentials, preferred_service):
 @click.option('--here-credentials', nargs=2,
               type=unicode,
               prompt='Enter API key for Here Geocoder API',
-              help='API key for Google Maps Geocoding API')
+              help='API key for Here Geocoder API')
 @click.option('--preferred-service',
               type=click.Choice(SERVICES),
               default='google',
