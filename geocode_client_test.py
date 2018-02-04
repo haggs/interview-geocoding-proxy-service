@@ -1,4 +1,7 @@
-"""File level comment.
+"""Unit tests for GeocodeClient based classes.
+
+Author: Dan Haggerty
+Date: Feb. 2, 2018
 """
 import httplib
 import mock
@@ -9,9 +12,10 @@ import response_mocks
 
 
 class TestGoogleGeocodeClient(unittest.TestCase):
-    """."""
+    """Unit tests for GoogleGeocodeClient."""
 
     def setUp(self):
+        """Sets up API key and client, mocks urlopen."""
         self.api_key = 'test_key'
         self.patcher = mock.patch.object(urllib, 'urlopen')
         self.mock_urlopen = self.patcher.start()
@@ -35,7 +39,7 @@ class TestGoogleGeocodeClient(unittest.TestCase):
             code=200, search_results=[(42.33, -122.45)])
 
         address = '660 King St'
-        results = self.client.get_lat_lng_from_address(address)
+        self.client.get_lat_lng_from_address(address)
 
         expected_params = urllib.urlencode({
             'address': address,
@@ -48,7 +52,7 @@ class TestGoogleGeocodeClient(unittest.TestCase):
         self.assertEqual(expected_url, actual_url)
 
     def test_get_lat_lng_raises_upon_non_success_response(self):
-        """."""
+        """Raises a GeocodeServiceSearchError if there's a failure."""
         error_response_code = httplib.BAD_REQUEST
         self.mock_urlopen.return_value = response_mocks.MockGoogleResponse(
             code=error_response_code)
@@ -59,6 +63,7 @@ class TestGoogleGeocodeClient(unittest.TestCase):
         self.assertIn(str(error_response_code), e.exception.message)
 
     def test_get_lat_lng_raises_upon_when_result_set_is_empty(self):
+        """Raises a GeocodeServiceSearchError if no results are found."""
         self.mock_urlopen.return_value = response_mocks.MockGoogleResponse(
             code=200, search_results=[])
 
@@ -69,9 +74,10 @@ class TestGoogleGeocodeClient(unittest.TestCase):
 
 
 class TestHereGeocodeClient(unittest.TestCase):
-    """."""
+    """Unit tests for HereGeocodeClient."""
 
     def setUp(self):
+        """Sets up API key and client, mocks urlopen."""
         self.app_id = 'test_id'
         self.app_code = 'test_code'
         self.patcher = mock.patch.object(urllib, 'urlopen')
@@ -89,7 +95,6 @@ class TestHereGeocodeClient(unittest.TestCase):
 
         results = self.client.get_lat_lng_from_address('660 King St')
 
-
         self.assertEqual(expected_lat_lng, results)
 
     def test_get_lat_lng_makes_proper_call_to_here_service(self):
@@ -98,7 +103,7 @@ class TestHereGeocodeClient(unittest.TestCase):
             code=200, search_results=[(42.33, -122.45)])
 
         address = '660 King St'
-        results = self.client.get_lat_lng_from_address(address)
+        self.client.get_lat_lng_from_address(address)
 
         expected_params = urllib.urlencode({
             'searchtext': address,
@@ -112,7 +117,7 @@ class TestHereGeocodeClient(unittest.TestCase):
         self.assertEqual(expected_url, actual_url)
 
     def test_get_lat_lng_raises_upon_non_success_response(self):
-        """."""
+        """Raises a GeocodeServiceSearchError if there's a failure."""
         error_response_code = httplib.BAD_REQUEST
         self.mock_urlopen.return_value = response_mocks.MockHereResponse(
             code=error_response_code)
@@ -123,6 +128,7 @@ class TestHereGeocodeClient(unittest.TestCase):
         self.assertIn(str(error_response_code), e.exception.message)
 
     def test_get_lat_lng_raises_upon_when_result_set_is_empty(self):
+        """Raises a GeocodeServiceSearchError if no results are found."""
         self.mock_urlopen.return_value = response_mocks.MockHereResponse(
             code=200, search_results=[])
 

@@ -1,5 +1,9 @@
 """A few classes for making API calls to some geocoding web services.
 
+The currently supported geocoding services are:
+    * Google Maps Geocoding API
+    * Here Geocoder API
+
 Author: Dan Haggerty
 Date: Feb. 2, 2018
 """
@@ -30,7 +34,15 @@ class GeocodeClient(object):
         self.credentials = credentials
 
     def get_lat_lng_from_address(self, address):
-        """Interface for getting lat/long from an address."""
+        """Interface for getting lat/long from an address.
+
+        Params:
+            address (string): the address to search
+
+        Returns:
+            A tuple<float, float> containing the lat/lng coordinates of
+            the first search result for the given address.
+        """
         raise NotImplementedError()
 
 
@@ -47,7 +59,15 @@ class GoogleGeocodeClient(GeocodeClient):
         super(GoogleGeocodeClient, self).__init__({'api_key': api_key})
 
     def get_lat_lng_from_address(self, address):
-        """Provides a tuple of lat/lng for an address."""
+        """Interface for getting lat/long from an address.
+
+        Params:
+            address (string): the address to search
+
+        Returns:
+            A tuple<float, float> containing the lat/lng coordinates of
+            the first search result for the given address.
+        """
         url = self.url_template.format(urllib.urlencode({
             'address': address,
             'api_key': self.credentials['api_key'],
@@ -71,7 +91,12 @@ class GoogleGeocodeClient(GeocodeClient):
 
 
 class HereGeocodeClient(GeocodeClient):
-    """."""
+    """A client for interfacing with the Here Geocoder API.
+
+    Params:
+        app_id (string): the app ID to use for making calls to Here
+        app_code (string): the app code to use for making calls to Here
+    """
     url_template = 'https://geocoder.cit.api.here.com/6.2/geocode.json?{}'
     service_name = 'Here Geocoder API'
 
@@ -80,7 +105,15 @@ class HereGeocodeClient(GeocodeClient):
             'app_id': app_id, 'app_code': app_code})
 
     def get_lat_lng_from_address(self, address):
-        """."""
+        """Interface for getting lat/long from an address.
+
+        Params:
+            address (string): the address to search
+
+        Returns:
+            A tuple<float, float> containing the lat/lng coordinates of
+            the first search result for the given address.
+        """
         url = self.url_template.format(urllib.urlencode({
             'searchtext': address,
             'app_id': self.credentials['app_id'],

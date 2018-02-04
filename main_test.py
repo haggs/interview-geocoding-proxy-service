@@ -1,3 +1,9 @@
+"""Tests for the geocoding proxy service Flask server.
+
+Author: Dan Haggerty
+Date: Feb. 2, 2018
+"""
+
 import geocode_client
 import httplib
 import json
@@ -20,8 +26,10 @@ MOCK_LAT_LNG = (23.01, 144.88)
 
 
 class TestGeocodingProxyService(unittest.TestCase):
+    """Test class for the server as a whole."""
 
     def setUp(self):
+        """Creates a test client, initializes the server, and mocks urlopen."""
         self.app = main.app.test_client()
         self.patcher = mock.patch.object(urllib, 'urlopen')
         self.mock_urlopen = self.patcher.start()
@@ -29,6 +37,7 @@ class TestGeocodingProxyService(unittest.TestCase):
                          main.GOOGLE_GEOCODE_SERVICE)
 
     def test_service_initializes_defaults_properly(self):
+        """It should use Google as its primary service."""
         first_client = main.clients[0]
 
         self.assertEqual(2, len(main.clients))
@@ -36,6 +45,7 @@ class TestGeocodingProxyService(unittest.TestCase):
         self.assertEqual({'api_key': TEST_API_KEY}, first_client.credentials)
 
     def test_service_uses_preferred_service_first(self):
+        """It should use Here first if it's set as the preferred service."""
         main._initialize(TEST_API_KEY, (TEST_APP_ID, TEST_APP_CODE),
                          main.HERE_GEOCODE_SERVICE)
 
@@ -47,6 +57,7 @@ class TestGeocodingProxyService(unittest.TestCase):
                          first_client.credentials)
 
     def test_address_lookup_api_succeeds_with_valid_address(self):
+        """It should return a valid lat long in JSON for a valid address."""
         self.mock_urlopen.return_value = response_mocks.MockGoogleResponse(
             code=httplib.OK, search_results=[MOCK_LAT_LNG])
 
@@ -64,6 +75,7 @@ class TestGeocodingProxyService(unittest.TestCase):
         self.assertEqual(1, self.mock_urlopen.call_count)
 
     def test_address_lookup_calls_other_services_if_first_service_fails(self):
+        """It should make another GET request if the first call fails."""
         self.mock_urlopen.return_value = response_mocks.MockGoogleResponse(
             code=httplib.NOT_FOUND)
 
@@ -72,6 +84,7 @@ class TestGeocodingProxyService(unittest.TestCase):
         self.assertEqual(2, self.mock_urlopen.call_count)
 
     def test_address_lookup_returns_404_if_all_services_fail(self):
+        """It should return a 404 if it can't find any results."""
         self.mock_urlopen.return_value = response_mocks.MockGoogleResponse(
             code=httplib.NOT_FOUND)
 
@@ -84,6 +97,7 @@ class TestGeocodingProxyService(unittest.TestCase):
         self.assertEqual(expected_data, actual_data)
 
     def test_address_lookup_returns_400_with_invalid_params(self):
+        """It should return 400 without a valid address to look up."""
         response = self.app.get('/api/address-lookup?invalid=660+king+st')
 
         expected_data = {'error': 'Bad request'}
