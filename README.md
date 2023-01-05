@@ -1,6 +1,8 @@
 # geocoding-proxy-service
 A simple HTTP service that can resolve the lat, lng coordinates for an address
-by using third party geocoding services. The two currently supported services are:
+by using third party geocoding services. This is for a take-home interview I did in 2018.
+
+The two currently supported services are:
 
   [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/start)
 
